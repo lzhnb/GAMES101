@@ -1,5 +1,7 @@
 # dir
 build
+.github
+.vscode
 
 # file
 *.zip
