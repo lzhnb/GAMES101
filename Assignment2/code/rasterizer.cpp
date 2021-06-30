@@ -123,16 +123,15 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
-    int xMin, yMin, xMax, yMax;
-    xMin = (int) v[0].x();
-    yMin = (int) v[0].y();
-    xMax = (int) v[0].x();
-    yMax = (int) v[0].y();
+    int xMin = (int) v[0].x();
+    int yMin = (int) v[0].y();
+    int xMax = (int) v[0].x();
+    int yMax = (int) v[0].y();
     for (int i = 1; i < 3; i++) {
-        if (v[i].x() < xMin) xMin = v[i].x();
-        if (v[i].x() > xMax) xMax = v[i].x();
-        if (v[i].y() < yMin) yMin = v[i].y();
-        if (v[i].y() > yMax) yMax = v[i].y();
+        xMin = v[i].x() < xMin ? v[i].x() : xMin;
+        xMax = v[i].x() > xMax ? v[i].x() : xMax;
+        yMin = v[i].y() < yMin ? v[i].y() : yMin;
+        yMax = v[i].y() > yMax ? v[i].y() : yMax;
     }
     xMax++;
     yMax++;
@@ -140,11 +139,11 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     // If so, use the following code to get the interpolated z value.
     // auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
     // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    // float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    // z_interpolated *= w_reciprocal;
+    // float zInterpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+    // zInterpolated *= w_reciprocal;
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
-    bool superSamling = false;
+    bool superSamling = true;
     Eigen::Vector3f point;
     if(~superSamling) {
         for(int i = xMin; i < xMax; i++) {
@@ -154,13 +153,13 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     // interpolate the depth
                     auto[alpha, beta, gamma] = computeBarycentric2D(i + 0.5, j + 0.5, t.v);
                     float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                    float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-                    z_interpolated *= w_reciprocal;
+                    float zInterpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                    zInterpolated *= w_reciprocal;
                     point.x()= i;
                     point.y()= j;
-                    if(z_interpolated < depth_buf[get_index(i, j)]) {
+                    if(zInterpolated < depth_buf[get_index(i, j)]) {
                         set_pixel(point, t.getColor());
-                        depth_buf[get_index(i, j)] = z_interpolated;
+                        depth_buf[get_index(i, j)] = zInterpolated;
                     }   
                 } 
             }
@@ -197,29 +196,29 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                 if(inside) {
                     auto[alpha0, beta0, gamma0] = computeBarycentric2D(i + 0.5, j + 0.5, t.v);
                     float w_reciprocal = 1.0 / (alpha0 / v[0].w() + beta0 / v[1].w() + gamma0 / v[2].w());
-                    float z_interpolated_a = alpha0 * v[0].z() / v[0].w() + beta0 * v[1].z() / v[1].w() + gamma0 * v[2].z() / v[2].w();
-                    z_interpolated_a *= w_reciprocal;
+                    float zInterpolated_a = alpha0 * v[0].z() / v[0].w() + beta0 * v[1].z() / v[1].w() + gamma0 * v[2].z() / v[2].w();
+                    zInterpolated_a *= w_reciprocal;
 
                     for(int m = 0; m < 4; m++) {
-                        float z_interpolated;
+                        float zInterpolated;
                         if(m == 0) {
                             auto[alpha1, beta1, gamma1] = computeBarycentric2D(i+0.25, j+0.25, t.v);
                             w_reciprocal = 1.0 / (alpha1 / v[0].w() + beta1 / v[1].w() + gamma1 / v[2].w());
-                            z_interpolated = alpha1 * v[0].z() / v[0].w() + beta1 * v[1].z() / v[1].w() + gamma1 * v[2].z() / v[2].w();
+                            zInterpolated = alpha1 * v[0].z() / v[0].w() + beta1 * v[1].z() / v[1].w() + gamma1 * v[2].z() / v[2].w();
                         } else if (m == 1) {
                             auto[alpha2, beta2, gamma2] = computeBarycentric2D(i+0.25, j+0.75, t.v);
                             w_reciprocal = 1.0 / (alpha2 / v[0].w() + beta2 / v[1].w() + gamma2 / v[2].w());
-                            z_interpolated = alpha2 * v[0].z() / v[0].w() + beta2 * v[1].z() / v[1].w() + gamma2 * v[2].z() / v[2].w();
+                            zInterpolated = alpha2 * v[0].z() / v[0].w() + beta2 * v[1].z() / v[1].w() + gamma2 * v[2].z() / v[2].w();
                         } else if (m == 2) {
                             auto[alpha3, beta3, gamma3] = computeBarycentric2D(i+0.75, j+0.25, t.v);
                             w_reciprocal = 1.0 / (alpha3 / v[0].w() + beta3 / v[1].w() + gamma3 / v[2].w());
-                            z_interpolated = alpha3 * v[0].z() / v[0].w() + beta3 * v[1].z() / v[1].w() + gamma3 * v[2].z() / v[2].w();
+                            zInterpolated = alpha3 * v[0].z() / v[0].w() + beta3 * v[1].z() / v[1].w() + gamma3 * v[2].z() / v[2].w();
                         } else {
                             auto[alpha4, beta4, gamma4] = computeBarycentric2D(i+0.75, j+0.75, t.v);
                             w_reciprocal = 1.0 / (alpha4 / v[0].w() + beta4 / v[1].w() + gamma4 / v[2].w());
-                            z_interpolated = alpha4 * v[0].z() / v[0].w() + beta4 * v[1].z() / v[1].w() + gamma4 * v[2].z() / v[2].w();
+                            zInterpolated = alpha4 * v[0].z() / v[0].w() + beta4 * v[1].z() / v[1].w() + gamma4 * v[2].z() / v[2].w();
                         }
-                        pixelDepth[m] = z_interpolated * w_reciprocal;
+                        pixelDepth[m] = zInterpolated * w_reciprocal;
                     }
                     int minDepth = pixelDepth[0];
                     for(int k = 0; k < 4; k++) {
@@ -229,6 +228,8 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     }
                     point.x()= i;
                     point.y()= j;
+                    
+                    // cover the previous point
                     if(minDepth < depth_buf[get_index(i, j)]) {
                         set_pixel(point, (t.getColor() * colorCoef) / 4 + (4 - colorCoef) * frame_buf[(height - 1 - j) * width + i] / 4);
                         depth_buf[get_index(i, j)] = minDepth;

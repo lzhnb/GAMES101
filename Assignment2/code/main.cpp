@@ -31,27 +31,37 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Copy-paste your implementation from the previous assignment.
-    Eigen::Matrix4f projection;
-    float t, b, l, r;
-    t = zNear * std::tan((eye_fov * MY_PI / 180) /2);
-    b = -t;
-    r = t * aspect_ratio;
-    l = -r;
-    Eigen::Matrix4f scale, translate, persToOrth;
-    scale << 2/(r - l), 0, 0, 0,
-             0, 2/(t - b), 0, 0,
-             0, 0, 2/(zNear - zFar), 0,
-             0, 0, 0, 1;
-    translate << 1, 0, 0, -(r + l) / 2,
-                 0, 1, 0, -(t + b) / 2,
-                 0, 0, 1, -(zNear + zFar) / 2,
-                 0, 0, 0, 1;
-    persToOrth << zNear, 0, 0, 0,
-                  0, zNear, 0, 0,
-                  0, 0, zNear + zFar, - zNear * zFar,
-                  0, 0, 1, 0; 
-    projection = scale * translate * persToOrth;
+    // Eigen::Matrix4f projection;
+    // float t, b, l, r;
+    // t = zNear * std::tan((eye_fov * MY_PI / 180) /2);
+    // b = -t;
+    // r = t * aspect_ratio;
+    // l = -r;
+    // Eigen::Matrix4f scale, translate, persToOrth;
+    // scale << 2/(r - l), 0, 0, 0,
+    //          0, 2/(t - b), 0, 0,
+    //          0, 0, 2/(zNear - zFar), 0,
+    //          0, 0, 0, 1;
+    // translate << 1, 0, 0, -(r + l) / 2,
+    //              0, 1, 0, -(t + b) / 2,
+    //              0, 0, 1, -(zNear + zFar) / 2,
+    //              0, 0, 0, 1;
+    // persToOrth << zNear, 0, 0, 0,
+    //               0, zNear, 0, 0,
+    //               0, 0, zNear + zFar, - zNear * zFar,
+    //               0, 0, 1, 0; 
+    // projection = scale * translate * persToOrth;
 
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+    /** directly define the projection matrix */
+    projection(3, 3) = 0;
+    projection(3, 2) = 1;
+    float top = -tan((eye_fov * MY_PI / 360.0f) * abs(zNear));
+    float right = top * aspect_ratio;
+    projection(0, 0) = zNear / right;
+    projection(1, 1) = zNear / top;
+    projection(2, 2) = (zNear + zFar) / (zNear - zFar);
+    projection(2, 3) = -(2 * zNear * zFar) / (zNear - zFar);
     return projection;
 }
 
