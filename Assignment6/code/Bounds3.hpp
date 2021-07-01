@@ -101,8 +101,8 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
 
     // 3 bounds loop
     for (size_t i = 0; i < 3; i++) {
-        float enter = (pMin[i] - ray.origin[i]) / invDir[i];
-        float exit = (pMax[i] - ray.origin[i]) / invDir[i];
+        float enter = (pMin[i] - ray.origin[i]) * invDir[i];
+        float exit = (pMax[i] - ray.origin[i]) * invDir[i];
 		if (!dirIsNeg[i])
 			std::swap(enter, exit);
         tEnter = std::max(enter, tEnter);
