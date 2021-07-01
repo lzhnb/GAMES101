@@ -111,7 +111,7 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
         // tExit = std::min(dirIsNeg[i] ? exit: enter, tExit);
     }
     
-    return (tExit > tEnter && tEnter > 0);
+    return (tExit > tEnter && tExit > 0);
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)

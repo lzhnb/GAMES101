@@ -5,6 +5,7 @@
 #include <fstream>
 #include "Scene.hpp"
 #include "Renderer.hpp"
+#include "omp.h"
 
 
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
@@ -23,25 +24,60 @@ void Renderer::Render(const Scene& scene)
     Vector3f eye_pos(278, 273, -800);
     int m = 0;
 
-    // change the spp value to change sample ammount
-    int spp = 16;
-    std::cout << "SPP: " << spp << "\n";
-    for (uint32_t j = 0; j < scene.height; ++j) {
-        for (uint32_t i = 0; i < scene.width; ++i) {
-            // generate primary ray direction
-            float x = (2 * (i + 0.5) / (float)scene.width - 1) *
-                      imageAspectRatio * scale;
-            float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
+    bool multithread = true;
 
-            Vector3f dir = normalize(Vector3f(-x, y, 1));
-            for (int k = 0; k < spp; k++){
-                framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
+    if(!multithread) {
+        // change the spp value to change sample ammount
+        int spp = 8;
+        std::cout << "SPP: " << spp << "\n";
+        //#pragma omp parallel for 
+        //config for the simple multithreading code
+        for (uint32_t j = 0; j < scene.height; ++j) {
+            for (uint32_t i = 0; i < scene.width; ++i) {
+                // generate primary ray direction
+                float x = (2 * (i + 0.5) / (float)scene.width - 1) *
+                        imageAspectRatio * scale;
+                float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
+
+                Vector3f dir = normalize(Vector3f(-x, y, 1));
+                thread_local Vector3f color = Vector3f(0.0);
+                for (int k = 0; k < spp; k++)
+                    framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
+                m++;
             }
-            m++;
+            UpdateProgress(j/(float)scene.height);
         }
-        UpdateProgress(j / (float)scene.height);
+        UpdateProgress(1.f);
+    } else {
+        float total = (float)scene.width * (float)scene.height;
+        // change the spp value to change sample ammount
+        int spp = 8;
+        std::cout << "SPP: " << spp << "\n";
+        #pragma omp parallel for 
+        //config for the simple multithreading code
+        for (uint32_t j = 0; j < scene.height; ++j) {
+            for (uint32_t i = 0; i < scene.width; ++i) {
+                // generate primary ray direction
+                float x = (2 * (i + 0.5) / (float)scene.width - 1) *
+                        imageAspectRatio * scale;
+                float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
+
+                Vector3f dir = normalize(Vector3f(-x, y, 1));
+                thread_local Vector3f color;
+                color = Vector3f(0);
+                for (int k = 0; k < spp; k++) {
+                    color += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
+                }
+                framebuffer[j*scene.width + i]+= color;
+                #pragma omp critical {
+                    m++;
+                    UpdateProgress((float)m / total);
+                }
+            }
+        }
+        UpdateProgress(1.f);
     }
-    UpdateProgress(1.f);
+
 
     // save framebuffer to file
     FILE* fp = fopen("binary.ppm", "wb");
